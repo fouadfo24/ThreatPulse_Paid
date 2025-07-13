@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDR Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00ff00;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - 120px);
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #2a2a2a;
+            padding: 1rem;
+            border-right: 1px solid #444;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background: #3a3a3a;
+            border-color: #555;
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border-color: #2a5298;
+        }
+        
+        .nav-item i {
+            font-size: 1.2rem;
+            width: 20px;
+        }
+        
+        .content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: #2a2a2a;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #444;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .metric-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        
+        .metric-icon {
+            font-size: 1.5rem;
+            color: #4a90e2;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4a90e2;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a90e2, #357abd);
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        
+        .data-table {
+            background: #2a2a2a;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+        
+        .table-header {
+            background: #3a3a3a;
+            padding: 1rem;
+            font-weight: 600;
+            border-bottom: 1px solid #444;
+        }
+        
+        .table-body {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .table-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+            padding: 1rem;
+            border-bottom: 1px solid #333;
+            transition: background 0.3s ease;
+        }
+        
+        .table-row:hover {
+            background: #3a3a3a;
+        }
+        
+        .alert-item {
+            background: #2a2a2a;
+            border-left: 4px solid #ff4444;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        
+        .alert-item.medium {
+            border-left-color: #ffaa00;
+        }
+        
+        .alert-item.low {
+            border-left-color: #00ff00;
+        }
+        
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-severity {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .alert-severity.high {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .alert-severity.medium {
+            background: #ffaa00;
+            color: white;
+        }
+        
+        .alert-severity.low {
+            background: #00ff00;
+            color: black;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #4a90e2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        
+        .network-row {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1fr 1fr;
+            padding: 1rem;
+            border-bottom: 1px solid #333;
+        }
+        
+        .file-event-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2fr 1fr;
+            padding: 1rem;
+            border-bottom: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-shield-alt"></i> EDR Security Dashboard</h1>
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator"></div>
+                <span>System Monitoring Active</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator"></div>
+                <span>Process Monitoring Active</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator"></div>
+                <span>File System Monitoring Active</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="nav-item active" onclick="showTab('dashboard')">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item" onclick="showTab('processes')">
+                <i class="fas fa-tasks"></i>
+                <span>Processes</span>
+            </div>
+            <div class="nav-item" onclick="showTab('network')">
+                <i class="fas fa-network-wired"></i>
+                <span>Network</span>
+            </div>
+            <div class="nav-item" onclick="showTab('files')">
+                <i class="fas fa-file-alt"></i>
+                <span>File Activity</span>
+            </div>
+            <div class="nav-item" onclick="showTab('alerts')">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Security Alerts</span>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <h2>System Overview</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">CPU Usage</span>
+                            <i class="fas fa-microchip metric-icon"></i>
+                        </div>
+                        <div class="metric-value" id="cpu-usage">0%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="cpu-progress"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Memory Usage</span>
+                            <i class="fas fa-memory metric-icon"></i>
+                        </div>
+                        <div class="metric-value" id="memory-usage">0%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="memory-progress"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Disk Usage</span>
+                            <i class="fas fa-hdd metric-icon"></i>
+                        </div>
+                        <div class="metric-value" id="disk-usage">0%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="disk-progress"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Active Processes</span>
+                            <i class="fas fa-cogs metric-icon"></i>
+                        </div>
+                        <div class="metric-value" id="process-count">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Processes Tab -->
+            <div id="processes" class="tab-content">
+                <h2>Running Processes</h2>
+                <button class="refresh-btn" onclick="refreshProcesses()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <div class="data-table">
+                    <div class="table-header">
+                        <div class="table-row">
+                            <div>PID</div>
+                            <div>Name</div>
+                            <div>User</div>
+                            <div>CPU %</div>
+                            <div>Memory %</div>
+                        </div>
+                    </div>
+                    <div class="table-body" id="processes-table">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading processes...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Network Tab -->
+            <div id="network" class="tab-content">
+                <h2>Network Connections</h2>
+                <button class="refresh-btn" onclick="refreshNetwork()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <div class="data-table">
+                    <div class="table-header">
+                        <div class="network-row">
+                            <div>Local Address</div>
+                            <div>Remote Address</div>
+                            <div>Status</div>
+                            <div>PID</div>
+                        </div>
+                    </div>
+                    <div class="table-body" id="network-table">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading network connections...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Files Tab -->
+            <div id="files" class="tab-content">
+                <h2>File System Activity</h2>
+                <button class="refresh-btn" onclick="refreshFileEvents()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <div class="data-table">
+                    <div class="table-header">
+                        <div class="file-event-row">
+                            <div>Time</div>
+                            <div>Action</div>
+                            <div>Path</div>
+                            <div>Size</div>
+                        </div>
+                    </div>
+                    <div class="table-body" id="files-table">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading file events...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alerts Tab -->
+            <div id="alerts" class="tab-content">
+                <h2>Security Alerts</h2>
+                <button class="refresh-btn" onclick="refreshAlerts()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <div id="alerts-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading alerts...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let refreshInterval;
+        
+        // Navigation functions
+        function showTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Remove active class from nav items
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked nav item
+            event.target.closest('.nav-item').classList.add('active');
+            
+            // Load data for the selected tab
+            loadTabData(tabName);
+        }
+        
+        function loadTabData(tabName) {
+            switch(tabName) {
+                case 'dashboard':
+                    loadDashboardData();
+                    break;
+                case 'processes':
+                    refreshProcesses();
+                    break;
+                case 'network':
+                    refreshNetwork();
+                    break;
+                case 'files':
+                    refreshFileEvents();
+                    break;
+                case 'alerts':
+                    refreshAlerts();
+                    break;
+            }
+        }
+        
+        // Dashboard functions
+        function loadDashboardData() {
+            fetch('/api/system')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error loading system data:', data.error);
+                        return;
+                    }
+                    
+                    // Update CPU
+                    document.getElementById('cpu-usage').textContent = data.cpu.toFixed(1) + '%';
+                    document.getElementById('cpu-progress').style.width = data.cpu + '%';
+                    
+                    // Update Memory
+                    document.getElementById('memory-usage').textContent = data.memory.percent.toFixed(1) + '%';
+                    document.getElementById('memory-progress').style.width = data.memory.percent + '%';
+                    
+                    // Update Disk
+                    document.getElementById('disk-usage').textContent = data.disk.percent.toFixed(1) + '%';
+                    document.getElementById('disk-progress').style.width = data.disk.percent + '%';
+                })
+                .catch(error => console.error('Error:', error));
+            
+            // Update process count
+            fetch('/api/processes')
+                .then(response => response.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        document.getElementById('process-count').textContent = data.length;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        function refreshProcesses() {
+            fetch('/api/processes')
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('processes-table');
+                    if (data.error) {
+                        table.innerHTML = '<div class="loading">Error loading processes: ' + data.error + '</div>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    data.forEach(process => {
+                        html += `
+                            <div class="table-row">
+                                <div>${process.pid}</div>
+                                <div>${process.name}</div>
+                                <div>${process.username || 'N/A'}</div>
+                                <div>${process.cpu_percent ? process.cpu_percent.toFixed(1) + '%' : '0%'}</div>
+                                <div>${process.memory_percent ? process.memory_percent.toFixed(1) + '%' : '0%'}</div>
+                            </div>
+                        `;
+                    });
+                    table.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('processes-table').innerHTML = '<div class="loading">Error loading processes</div>';
+                });
+        }
+        
+        function refreshNetwork() {
+            fetch('/api/network')
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('network-table');
+                    if (data.error) {
+                        table.innerHTML = '<div class="loading">Error loading network data: ' + data.error + '</div>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    data.forEach(conn => {
+                        html += `
+                            <div class="network-row">
+                                <div>${conn.local_addr}</div>
+                                <div>${conn.remote_addr}</div>
+                                <div>${conn.status}</div>
+                                <div>${conn.pid || 'N/A'}</div>
+                            </div>
+                        `;
+                    });
+                    table.innerHTML = html || '<div class="loading">No active connections</div>';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('network-table').innerHTML = '<div class="loading">Error loading network data</div>';
+                });
+        }
+        
+        function refreshFileEvents() {
+            fetch('/api/file-events')
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('files-table');
+                    let html = '';
+                    data.forEach(event => {
+                        const date = new Date(event.timestamp);
+                        html += `
+                            <div class="file-event-row">
+                                <div>${date.toLocaleTimeString()}</div>
+                                <div>${event.action}</div>
+                                <div>${event.path}</div>
+                                <div>${event.size} bytes</div>
+                            </div>
+                        `;
+                    });
+                    table.innerHTML = html || '<div class="loading">No file events</div>';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('files-table').innerHTML = '<div class="loading">Error loading file events</div>';
+                });
+        }
+        
+        function refreshAlerts() {
+            fetch('/api/alerts')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('alerts-container');
+                    let html = '';
+                    
+                    if (data.length === 0) {
+                        html = '<div class="loading">No security alerts</div>';
+                    } else {
+                        data.forEach(alert => {
+                            const date = new Date(alert.timestamp);
+                            html += `
+                                <div class="alert-item ${alert.severity.toLowerCase()}">
+                                    <div class="alert-header">
+                                        <div>
+                                            <strong>${alert.type}</strong> - ${alert.message}
+                                        </div>
+                                        <span class="alert-severity ${alert.severity.toLowerCase()}">${alert.severity}</span>
+                                    </div>
+                                    <div style="color: #ccc; font-size: 0.9rem;">
+                                        ${date.toLocaleString()}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    container.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('alerts-container').innerHTML = '<div class="loading">Error loading alerts</div>';
+                });
+        }
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            
+            // Set up auto-refresh for dashboard
+            refreshInterval = setInterval(() => {
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab && activeTab.id === 'dashboard') {
+                    loadDashboardData();
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
